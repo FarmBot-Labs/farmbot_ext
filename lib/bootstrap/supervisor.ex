@@ -102,9 +102,9 @@ defmodule Farmbot.Bootstrap.Supervisor do
       server = get_config_value(:string, "authorization", "server")
 
       # Make sure they aren't empty.
-      email || Farmbot.Logger.warn 1, "Could not find email in configuration. "
-      pass || raise "No password provided in config storage."
-      server || raise "No server provided in config storage"
+      email  || raise "Could not find email in configuration. "
+      pass   || raise "No password provided in config storage."
+      server || raise "No server provided in config storage."
       {email, pass, server}
     rescue
       e in RuntimeError -> {:error, Exception.message(e)}
@@ -124,28 +124,15 @@ defmodule Farmbot.Bootstrap.Supervisor do
         update_config_value(:string, "authorization", "token", token)
 
         children = [
-          supervisor(Farmbot.HTTP.Supervisor,               []),
-          worker(Farmbot.Bootstrap.SettingsSync,            []),
-          supervisor(Farmbot.Firmware.Supervisor,           []),
-          supervisor(Farmbot.BotState.Supervisor,           []),
-          supervisor(Farmbot.BotState.Transport.Supervisor, []),
-          supervisor(Farmbot.Repo.Supervisor,               []),
-          supervisor(Farmbot.Farmware.Supervisor,           []),
-          worker(Farmbot.Regimen.NameProvider,              []),
-          supervisor(Farmbot.FarmEvent.Supervisor,          []),
-          supervisor(Farmbot.Regimen.Supervisor,            []),
-          worker(Farmbot.Bootstrap.AuthTask,                []),
+          {Farmbot.HTTP.Supervisor, []},
+          {Farmbot.AMQP.Supervisor , []},
+          {Farmbot.Bootstrap.AuthTask, []}
         ]
 
         opts = [strategy: :one_for_one]
-        supervise(children, opts)
+        Supervisor.init(children, opts)
 
-      # I don't actually _have_ to factory reset here. It would get detected ad
-      # an application start fail and we would factory_reset from there,
-      # the error message is just way more useful here.
-      {:error, reason} ->
-        Farmbot.System.factory_reset(reason)
-        :ignore
+      {:error, reason} -> {:error, reason}
     end
   end
 end

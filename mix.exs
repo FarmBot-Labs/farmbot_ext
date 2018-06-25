@@ -26,6 +26,7 @@ defmodule Farmbot.Ext.MixProject do
       {:httpoison, "~> 1.2"},
       {:jason, "~> 1.0"},
       {:uuid, "~> 1.1"},
+      {:amqp, "~> 1.0"},
       {:rsa, "~> 0.0.1"},
       {:fs, "~> 3.4"},
     ]

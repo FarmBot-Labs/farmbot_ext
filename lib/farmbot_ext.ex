@@ -6,8 +6,13 @@ defmodule Farmbot.Ext do
   use Application
 
   def start(_type, _args) do
+    Farmbot.Config.update_config_value(:string, "authorization", "email", "connor@farmbot.io")
+    Farmbot.Config.update_config_value(:string, "authorization", "password", "password1234")
+    Farmbot.Config.update_config_value(:string, "authorization", "server", "https://my.farmbot.io")
+    Farmbot.Config.update_config_value(:bool, "settings", "first_boot", true)
     # List all child processes to be supervised
     children = [
+      {Farmbot.Bootstrap.Supervisor, []}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

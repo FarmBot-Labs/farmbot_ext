@@ -138,8 +138,8 @@ defmodule Farmbot.HTTP do
   end
 
   @doc "Start HTTP Services."
-  def start_link do
-    GenServer.start_link(__MODULE__, [], name: __MODULE__)
+  def start_link(args) do
+    GenServer.start_link(__MODULE__, args, name: __MODULE__)
   end
 
   def init([]) do
