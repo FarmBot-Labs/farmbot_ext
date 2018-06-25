@@ -14,19 +14,14 @@ defmodule Farmbot.AMQP.CeleryScriptTransport do
     GenServer.start_link(__MODULE__, args, [name: __MODULE__])
   end
 
-  def init([]) do
-    token = get_config_value(:string, "authorization", "token")
-    %{bot: device, mqtt: mqtt_host, vhost: vhost} = Farmbot.Jwt.decode!(token)
-    {:ok, conn}  = open_connection(token, device, mqtt_host, vhost)
+  def init([conn, jwt]) do
     {:ok, chan}  = AMQP.Channel.open(conn)
     :ok          = Basic.qos(chan, [global: true])
-
-    {:ok, _}     = AMQP.Queue.declare(chan, device <> "_from_clients", [auto_delete: true])
-    {:ok, _}     = AMQP.Queue.purge(chan, device <> "_from_clients")
-    :ok          = AMQP.Queue.bind(chan, device <> "_from_clients", @exchange, [routing_key: "bot.#{device}.from_clients"])
-    {:ok, _tag}  = Basic.consume(chan, device <> "_from_clients", self(), [no_ack: true])
-
-    {:ok, struct(State, [conn: conn, chan: chan, bot: device])}
+    {:ok, _}     = AMQP.Queue.declare(chan, jwt.bot <> "_from_clients", [auto_delete: true])
+    {:ok, _}     = AMQP.Queue.purge(chan, jwt.bot <> "_from_clients")
+    :ok          = AMQP.Queue.bind(chan, jwt.bot <> "_from_clients", @exchange, [routing_key: "bot.#{jwt.bot}.from_clients"])
+    {:ok, _tag}  = Basic.consume(chan, jwt.bot <> "_from_clients", self(), [no_ack: true])
+    {:ok, struct(State, [conn: conn, chan: chan, bot: jwt.bot])}
   end
 
   def terminate(reason, state) do
@@ -40,9 +35,6 @@ defmodule Farmbot.AMQP.CeleryScriptTransport do
 
     # If a channel was still open, close it.
     if state.chan, do: AMQP.Channel.close(state.chan)
-
-    # If the connection is still open, close it.
-    if state.conn, do: AMQP.Connection.close(state.conn)
   end
 
   # Confirmation sent by the broker after registering this process as a consumer
@@ -77,14 +69,5 @@ defmodule Farmbot.AMQP.CeleryScriptTransport do
     json = Farmbot.JSON.decode!(payload)
     {:ok, ast} = Farmbot.CeleryScript.AST.decode(json)
     Farmbot.CeleryScript.Scheduler.schedule(ast)
-  end
-
-  defp open_connection(token, device, mqtt_server, vhost) do
-    opts = [
-      host: mqtt_server,
-      username: device,
-      password: token,
-      virtual_host: vhost]
-    AMQP.Connection.open(opts)
   end
 end
