@@ -124,8 +124,9 @@ defmodule Farmbot.Bootstrap.Supervisor do
         update_config_value(:string, "authorization", "token", token)
 
         children = [
-          {Farmbot.HTTP.Supervisor, []},
-          {Farmbot.AMQP.Supervisor , []},
+          {Farmbot.HTTP.Supervisor,    []},
+          {Farmbot.SettingsSync,       []},
+          {Farmbot.AMQP.Supervisor ,   []},
           {Farmbot.Bootstrap.AuthTask, []}
         ]
 

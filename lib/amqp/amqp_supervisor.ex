@@ -15,6 +15,7 @@ defmodule Farmbot.AMQP.Supervisor do
     children = [
       {Farmbot.AMQP.LogTransport,          [conn, jwt]},
       {Farmbot.AMQP.BotStateTransport,     [conn, jwt]},
+      {Farmbot.AMQP.AutoSyncTransport,     [conn, jwt]},
       # {Farmbot.AMQP.CeleryScriptTransport, [conn, jwt]}
     ]
     Supervisor.init(children, [strategy: :one_for_one])
